@@ -1,0 +1,24 @@
+<html>
+<head><meta charset="UTF-8" />
+   <title>websocket ruby test</title>
+   <script type="text/javascript" src="http://code.jquery.com/jquery-2.1.3.min.js"></script> 
+   <script type="text/javascript">
+$(function(){
+    var ws = new WebSocket('ws://localhost:8088/');
+    $("#send").on('click', function(){
+            ws.send($('#message').val());
+        });
+
+     ws.onmessage = function(event){
+               var message_li = $('<li>').text(event.data);
+             $("#msg-area").append(message_li);
+         };
+});
+  </script>
+ </head>
+<body>
+   <input type="text" id="message" />
+   <input type="button" id="send" value="send"/>
+   <ul id="msg-area" />
+ </body>
+</html>
