@@ -37,6 +37,7 @@ require 'json'
 # -------------------------------------------------
 # Const
 # -------------------------------------------------
+DEFAULT_HOST = 'localhost'
 DEFAULT_PORT = 8088
 # action type
 #   role:     role送信指示[:player/:monitor]
@@ -52,11 +53,11 @@ PLAYER_ACTION = [:role, :wait, :attack, :deffence, :finish, :monitor]
 # Server
 # -------------------------------------------------
 class Server
-  def initialize(port)
-    $log.info "started on ws://localhost:#{port}"
+  def initialize(host, port)
+    $log.info "started on ws://#{host}:#{port}"
     Match.new
 
-    EM::WebSocket.start({:host => 'localhost', :port => port}) do |session|
+    EM::WebSocket.start({:host => host, :port => port}) do |session|
 
       # session確立時
       session.onopen do
@@ -503,6 +504,7 @@ end
 # option
 option = {debug: false}
 OptionParser.new do |opt|
+  opt.on('--host=[VALUE]', '[str] host name (default: localhost)'){|v| option[:host] = v}
   opt.on('--port=[VALUE]', '[int] port number (default: 8088)'){|v| option[:port] = v}
   opt.on('--debug',        '[ - ] logging debug log'){|v| option[:debug] = v}
   opt.parse!(ARGV)
@@ -520,4 +522,6 @@ end
 $log.debug "MODE DEBUG"
 
 # start up server
-Server.new port = option[:port] ? option[:port] : DEFAULT_PORT
+host = option[:host] ? option[:host] : DEFAULT_HOST
+port = option[:port] ? option[:port] : DEFAULT_PORT
+Server.new(host, port)
