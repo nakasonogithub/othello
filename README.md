@@ -114,7 +114,7 @@ Client<=>Server間はWebSocketで通信を行います。メッセージ形式�
         [null,null,null,null,null,null,null,null],
         [null,null,null,null,null,null,null,null],
         [null,null,null,null,null,null,null,null],
-        [null,null,"b","w","b",null,null,null],
+        [null,null,"b","b","b",null,null,null],
         [null,null,null,"b","w",null,null,null],
         [null,null,null,null,null,null,null,null],
         [null,null,null,null,null,null,null,null],
