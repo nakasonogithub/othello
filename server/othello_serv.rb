@@ -396,21 +396,38 @@ class Game
   end
 
   #
-  # 現在の盤面に与えられた石を置けるか判定し、
-  #   配置可能な場合 :change
-  #   配置不可&&全て埋まってれば :finish 
-  #   配置不可&&全て埋まってない :pass,
+  # 次にプレイヤーに与えるActionを決定する
+  #   :change
+  #     => 与えられた石(置き終わった人と逆の人の石)を置ける場合
+  #   :pass 
+  #     => 与えられた石(置き終わった人と逆の人の石)が置けない 
+  #        && 置き終わった人の石が再度置ける場合
+  #   :finish
+  #     => 相互に打つことができない場合
+  #        - 盤上が全て埋まっている場合
+  #        - 両者ともパスになる場合
+  #        - 盤面が片方の色になる場合
   def next_action(stone)
-    0.upto 7 do |x|
-      0.upto 7 do |y|
-        return :change if where_reversible(x,y,stone.clr).size > 0
+    if can_put? stone
+      :change
+    else
+      if can_put? stone.other
+        :pass
+      else
+        :finish
       end
     end
-    if @board.filled?
-      :finish
-    else
-      :pass
+  end
+
+  #
+  # Board上に指定された石色を置くことが可能か
+  def can_put?(stone)
+    0.upto 7 do |x|
+      0.upto 7 do |y|
+        return true if where_reversible(x,y,stone.clr).size > 0
+      end
     end
+    false
   end
 
 end
@@ -439,7 +456,7 @@ class Board
   #
   # 盤上が全て埋まっているか
   def filled?; return !(@self.flatten.include?(nil)); end
-  
+
   #
   # Board情報を配列で返却(JSON変換用)
   def to_a; @self; end
