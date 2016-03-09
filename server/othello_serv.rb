@@ -521,8 +521,8 @@ end
 # option
 option = {debug: false}
 OptionParser.new do |opt|
-  opt.on('--host=[VALUE]', '[str] host name (default: localhost)'){|v| option[:host] = v}
-  opt.on('--port=[VALUE]', '[int] port number (default: 8088)'){|v| option[:port] = v}
+  opt.on('--host=[VALUE]', "[str] host name (default: #{DEFAULT_HOST})"){|v| option[:host] = v}
+  opt.on('--port=[VALUE]', "[int] port number (default: #{DEFAULT_PORT})"){|v| option[:port] = v}
   opt.on('--debug',        '[ - ] logging debug log'){|v| option[:debug] = v}
   opt.parse!(ARGV)
 end
