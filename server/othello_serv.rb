@@ -37,7 +37,7 @@ require 'json'
 # -------------------------------------------------
 # Const
 # -------------------------------------------------
-DEFAULT_HOST = 'localhost'
+DEFAULT_HOST = '0.0.0.0'
 DEFAULT_PORT = 8088
 # action type
 #   role:     role送信指示[:player/:monitor]

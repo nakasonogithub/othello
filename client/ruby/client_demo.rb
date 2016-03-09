@@ -6,7 +6,7 @@
 require 'websocket-client-simple'
 require 'json'
 
-ws = WebSocket::Client::Simple.connect 'http://localhost:8088'
+ws = WebSocket::Client::Simple.connect 'http://0.0.0.0:8088'
 
 ws.on :open do
   puts "on_open"

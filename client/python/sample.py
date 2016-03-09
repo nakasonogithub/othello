@@ -16,7 +16,7 @@ from ws4py.client.threadedclient import WebSocketClient
 # -------------------------------------------------
 # const
 # -------------------------------------------------
-SERV = 'ws://127.0.0.1:8088' # localhost不可
+SERV = 'ws://0.0.0.0:8088'
 NAME = 'PECO'
 ROLE = 'player'
 
