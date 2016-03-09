@@ -83,6 +83,8 @@ function drawBoard(data){
   var stones = $.parseJSON(data)["board"];
   var board = [];
 
+  console.log(stones)
+
   board.push('<table>');
   if(stones != ""){
     board.push('<tr>')
@@ -102,9 +104,9 @@ function drawBoard(data){
     board.push('<th>'+y+'</th>');
     for(var x=0;x<stones[y].length; x++){
       board.push('<td class="cell ');
-      if(stones[x][y] == 'b'){
+      if(stones[y][x] == 'b'){
         board.push('black');
-      }else if(stones[x][y] == 'w'){
+      }else if(stones[y][x] == 'w'){
         board.push('white');
       }else{
         board.push('empty');

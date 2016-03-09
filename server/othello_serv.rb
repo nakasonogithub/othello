@@ -447,11 +447,11 @@ class Board
 
   #
   # 石の配置
-  def placing(x, y, s); @self[x][y] = s; end
+  def placing(x, y, s); @self[y][x] = s; end
 
   #
   # 指定位置のStoneインスタンスを返却
-  def stone(x, y); @self[x][y]; end
+  def stone(x, y); @self[y][x]; end
 
   #
   # 盤上が全て埋まっているか

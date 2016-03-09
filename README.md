@@ -27,7 +27,7 @@ Client<=>Server間はWebSocketで通信を行います。メッセージ形式�
 |key|説明|valueとして取り得る値|
 |---|---|---|
 |action|AIへの指示|※別表: action一覧|
-|board|盤面情報|空配列もしくは8*8の2次元配列。配列内の値として黒石"b", 白石"w", 空きマスnullが格納される|
+|board|盤面情報|空配列もしくは8*8の2次元配列(board[y][x])。配列内の値として黒石"b", 白石"w", 空きマスnullが格納される|
 |color|割り当てられた石色|nullもしくは"b", "w"|
 |result|対戦結果|nullもしくは"win", "lose", "draw"|
 
