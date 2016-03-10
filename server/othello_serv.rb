@@ -39,6 +39,7 @@ require 'json'
 # -------------------------------------------------
 DEFAULT_HOST = '0.0.0.0'
 DEFAULT_PORT = 8088
+TIMEOUT = 1
 # action type
 #   role:     role送信指示[:player/:monitor]
 #   wait:     次回指示待ち指示
@@ -102,7 +103,7 @@ end
 # -------------------------------------------------
 class Match
   @@list = []
-  attr_accessor :p1, :p2, :monitor, :game
+  attr_accessor :p1, :p2, :monitor, :game, :timer
 
   #
   #
@@ -146,23 +147,28 @@ class Match
   #
   # 対戦開始
   def start
-    $log.info "GameMatching: #{self.p1.id} vs #{self.p2.id}"
+    $log.info "GameMatching: #{@p1.id} vs #{@p2.id}"
     # 先行をRandomで決定
     pre = [*1..2].sample
     post = pre == 1 ? 2 : 1
     # Gameの生成, 関連付け
-    self.game = Game.new
+    @game = Game.new
     # Player情報の更新
-    eval("self.p#{pre}.is_attacker = true")
-    eval("self.p#{pre}.clr = :b")
-    eval("self.p#{post}.is_attacker = false")
-    eval("self.p#{post}.clr = :w")
+    eval("@p#{pre}.is_attacker = true")
+    eval("@p#{pre}.clr = :b")
+    eval("@p#{post}.is_attacker = false")
+    eval("@p#{post}.clr = :w")
+    # Timerの生成, 関連付け
+    unless $option[:debug]
+      @timer = Timer.new
+      @timer.start attacker
+    end
     # actionの通知
-    eval("self.p#{post}.operation :deffence, self.game.board")
-    eval("self.p#{pre}.operation :attack, self.game.board")
+    deffender.operation(:deffence, @game.board.to_a)
+    attacker.operation(:attack, @game.board.to_a)
     if @monitor
-      @monitor.clr  = "#{self.p1.name}'s color: #{self.p1.clr}"
-      @monitor.clr += " / #{self.p2.name}'s color: #{self.p2.clr}"
+      @monitor.clr  = "#{@p1.name}'s color: #{@p1.clr}"
+      @monitor.clr += " / #{@p2.name}'s color: #{@p2.clr}"
       @monitor.operation(:monitor, @game.board.to_a)
     end
   end
@@ -179,9 +185,12 @@ class Match
       return
     end
     #
-    action = @game.put(plyr.clr, msg['x'], msg['y'])
+    unless @game.put(plyr.clr, msg['x'], msg['y'])
+      finish(plyr.other_plyr)
+      return
+    end
     #
-    eval "#{action}"
+    eval "#{@game.next_action(Stone.new(plyr.clr).other)}"
   end
 
   #
@@ -194,6 +203,7 @@ class Match
       @p1.is_attacker = true
       @p2.is_attacker = false
     end
+    @timer.start attacker unless $option[:debug]
     deffender.operation(:deffence, @game.board.to_a)
     attacker.operation(:attack, @game.board.to_a)
     @monitor.operation(:monitor, @game.board.to_a) if @monitor
@@ -202,6 +212,7 @@ class Match
   #
   #
   def pass
+    @timer.start attacker unless $option[:debug]
     deffender.operation(:deffence, @game.board.to_a)
     attacker.operation(:attack, @game.board.to_a)
     @monitor.operation(:monitor, @game.board.to_a) if @monitor
@@ -209,44 +220,58 @@ class Match
 
   #
   # 対戦終了
-  #   - 全て終了のパターン
-  #   - 途中終了のパターン(途中終了の場合、攻撃者のルール違反)
-  def finish
-    if @game.board.filled?
-      # 結果判定
-      $log.debug @game.board.count(attacker.clr)
-      case @game.board.count(attacker.clr)
-      when 0..31
-        attacker.operation(:finish, @game.board.to_a, :lose)
-        deffender.operation(:finish, @game.board.to_a, :win)
-        if @monitor
-          @monitor.operation(:finish, @game.board.to_a, "winner is #{deffender.name}")
-        end
+  #   - 反則による終了(=カウント不要)
+  #     - 攻撃時間を超過した場合
+  #     - 配置不可な場所に配置しようとした場合
+  #   - 配置可能場所が無くなって終了(=カウント要)
+  #     - 盤上が全て埋まっている場合
+  #     - 両者ともパスになる場合
+  #     - 盤面が片方の色になる場合
+  def finish(winner=nil)
 
-      when 32
-        attacker.operation(:finish, @game.board.to_a, :draw)
-        deffender.operation(:finish, @game.board.to_a, :draw)
-        if @monitor
-          @monitor.operation(:finish, @game.board.to_a, :draw)
-        end
+    @timer.reset
 
-      when 33..64
-        attacker.operation(:finish, @game.board.to_a, :win)
-        deffender.operation(:finish, @game.board.to_a, :lose)
-        if @monitor
-          @monitor.operation(:finish, @game.board.to_a, "winner is #{attacker.name}")
-        end
-
-      end
-
+    # TODO:
+    if winner
     else
-      attacker.operation(:finish, @game.board.to_a, :lose)
-      deffender.operation(:finish, @game.board.to_a, :win)
-      if @monitor
-        @monitor.operation(:finish, @game.board.to_a, "winner is #{deffender.name}")
-      end
-
+      if @game.board.count(attacker.clr) <
     end
+
+    #if @game.board.filled?
+    #  # 結果判定
+    #  $log.debug @game.board.count(attacker.clr)
+    #  case @game.board.count(attacker.clr)
+    #  when 0..31
+    #    attacker.operation(:finish, @game.board.to_a, :lose)
+    #    deffender.operation(:finish, @game.board.to_a, :win)
+    #    if @monitor
+    #      @monitor.operation(:finish, @game.board.to_a, "winner is #{deffender.name}")
+    #    end
+
+    #  when 32
+    #    attacker.operation(:finish, @game.board.to_a, :draw)
+    #    deffender.operation(:finish, @game.board.to_a, :draw)
+    #    if @monitor
+    #      @monitor.operation(:finish, @game.board.to_a, :draw)
+    #    end
+
+    #  when 33..64
+    #    attacker.operation(:finish, @game.board.to_a, :win)
+    #    deffender.operation(:finish, @game.board.to_a, :lose)
+    #    if @monitor
+    #      @monitor.operation(:finish, @game.board.to_a, "winner is #{attacker.name}")
+    #    end
+
+    #  end
+
+    #else
+    #  attacker.operation(:finish, @game.board.to_a, :lose)
+    #  deffender.operation(:finish, @game.board.to_a, :win)
+    #  if @monitor
+    #    @monitor.operation(:finish, @game.board.to_a, "winner is #{deffender.name}")
+    #  end
+
+    #end
   end
 
   #
@@ -259,6 +284,12 @@ class Match
   #
   def deffender
     return deffender = @p1.is_attacker ? @p2 : @p1
+  end
+
+  #
+  #
+  def other_plyr(plyr)
+    return other = plyr == @p1 ? @p2 : @p1
   end
 
 end
@@ -304,6 +335,43 @@ end
 
 
 # -------------------------------------------------
+# TimerClass
+# -------------------------------------------------
+class Timer
+  attr_accessor :thread
+
+  #
+  #
+  def start(target)
+    if @thread
+      reset
+    end
+
+    @thread = Thread.fork do
+      sleep TIMEOUT
+      fire(target)
+    end
+  end
+
+  #
+  #
+  def reset
+    @thread.kill
+    while @thread.alive?; end
+    @thread = nil
+  end
+
+  #
+  #
+  def fire(target)
+    $log.info("#{TIMEOUT}sec timeout: looser is #{target.name}")
+    Match.which(target).finish(target.other_plyr)
+  end
+
+end
+
+
+# -------------------------------------------------
 # GameClass
 # -------------------------------------------------
 class Game
@@ -323,18 +391,16 @@ class Game
   # 石配置
   #   - 石を配置可能か
   #   - 石の配置 & ひっくり返す
-  #   - 攻守を入れ替えるか判定(強制パスじゃないか)
   def put(clr, x, y)
     #
     where = where_reversible(x,y,clr)
-    return :finish if where == []
+    return false if where == []
     $log.debug("#{x},#{y} is reversible")
     #
     @board.placing(x,y,Stone.new(clr))
     reverse(x,y,where)
     @board.screen
-    #
-    return next_action(Stone.new(clr).other)
+    return true
   end
 
   #
@@ -519,11 +585,11 @@ end
 # main
 # -------------------------------------------------
 # option
-option = {debug: false}
+$option = {debug: false}
 OptionParser.new do |opt|
-  opt.on('--host=[VALUE]', "[str] host name (default: #{DEFAULT_HOST})"){|v| option[:host] = v}
-  opt.on('--port=[VALUE]', "[int] port number (default: #{DEFAULT_PORT})"){|v| option[:port] = v}
-  opt.on('--debug',        '[ - ] logging debug log'){|v| option[:debug] = v}
+  opt.on('--host=[VALUE]', "[str] host name (default: #{DEFAULT_HOST})"){|v| $option[:host] = v}
+  opt.on('--port=[VALUE]', "[int] port number (default: #{DEFAULT_PORT})"){|v| $option[:port] = v}
+  opt.on('--debug',        '[ - ] logging debug log'){|v| $option[:debug] = v}
   opt.parse!(ARGV)
 end
 
@@ -531,7 +597,7 @@ end
 $log = Object.new
 def $log.info(msg);  puts "[INFO ] #{msg}"; end
 def $log.error(msg); puts "[ERROR] #{msg}"; end
-if option[:debug]
+if $option[:debug]
   def $log.debug(msg); puts "[DEBUG] #{msg}"; end
 else
   def $log.debug(msg); end
@@ -539,6 +605,6 @@ end
 $log.debug "MODE DEBUG"
 
 # start up server
-host = option[:host] ? option[:host] : DEFAULT_HOST
-port = option[:port] ? option[:port] : DEFAULT_PORT
+host = $option[:host] ? $option[:host] : DEFAULT_HOST
+port = $option[:port] ? $option[:port] : DEFAULT_PORT
 Server.new(host, port)
