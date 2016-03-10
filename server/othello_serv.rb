@@ -161,7 +161,7 @@ class Match
     # Timerの生成, 関連付け
     unless $option[:debug]
       @timer = Timer.new
-      @timer.start attacker
+      @timer.watch attacker
     end
     # actionの通知
     deffender.operation(:deffence, @game.board.to_a)
@@ -186,7 +186,7 @@ class Match
     end
     #
     unless @game.put(plyr.clr, msg['x'], msg['y'])
-      finish(plyr.other_plyr)
+      finish(plyr)
       return
     end
     #
@@ -203,7 +203,7 @@ class Match
       @p1.is_attacker = true
       @p2.is_attacker = false
     end
-    @timer.start attacker unless $option[:debug]
+    @timer.watch attacker unless $option[:debug]
     deffender.operation(:deffence, @game.board.to_a)
     attacker.operation(:attack, @game.board.to_a)
     @monitor.operation(:monitor, @game.board.to_a) if @monitor
@@ -212,7 +212,7 @@ class Match
   #
   #
   def pass
-    @timer.start attacker unless $option[:debug]
+    @timer.watch attacker unless $option[:debug]
     deffender.operation(:deffence, @game.board.to_a)
     attacker.operation(:attack, @game.board.to_a)
     @monitor.operation(:monitor, @game.board.to_a) if @monitor
@@ -227,51 +227,41 @@ class Match
   #     - 盤上が全て埋まっている場合
   #     - 両者ともパスになる場合
   #     - 盤面が片方の色になる場合
-  def finish(winner=nil)
+  def finish(loser=nil)
+    $log.info("finish loser=#{loser.name}")
 
-    @timer.reset
+    @timer.cancel
+    brd = @game.board.to_a
 
-    # TODO:
-    if winner
+    if loser
+      # 反則終了
+      loser.operation(:finish, brd, :lose)
+      other_plyr(loser).operation(:finish, brd, :win)
+
     else
-      if @game.board.count(attacker.clr) <
+      # 配置可能場所枯渇
+      attacker_count = @game.board.count(attacker.clr)
+      deffender_count = @game.board.count(deffender.clr)
+      if attacker_count > deffender_count
+        attacker.operation(:finish, brd, :win)
+        deffender.operation(:finish, brd, :lose)
+        @monitor.operation(:finish, brd, "winner is #{attacker.name}") if @monitor
+        
+      elsif attacker_count < deffender_count
+        attacker.operation(:finish, brd, :lose)
+        deffender.operation(:finish, brd, :win)
+        @monitor.operation(:finish, brd, "winner is #{deffender.name}") if @monitor
+
+      else
+        attacker.operation(:finish, brd, :draw)
+        deffender.operation(:finish, brd, :draw)
+        @monitor.operation(:finish, brd, :draw) if @monitor
+
+      end
     end
 
-    #if @game.board.filled?
-    #  # 結果判定
-    #  $log.debug @game.board.count(attacker.clr)
-    #  case @game.board.count(attacker.clr)
-    #  when 0..31
-    #    attacker.operation(:finish, @game.board.to_a, :lose)
-    #    deffender.operation(:finish, @game.board.to_a, :win)
-    #    if @monitor
-    #      @monitor.operation(:finish, @game.board.to_a, "winner is #{deffender.name}")
-    #    end
+    # TODO: Match.@@listから削除: oncloseからも呼べるようなめそっどにする
 
-    #  when 32
-    #    attacker.operation(:finish, @game.board.to_a, :draw)
-    #    deffender.operation(:finish, @game.board.to_a, :draw)
-    #    if @monitor
-    #      @monitor.operation(:finish, @game.board.to_a, :draw)
-    #    end
-
-    #  when 33..64
-    #    attacker.operation(:finish, @game.board.to_a, :win)
-    #    deffender.operation(:finish, @game.board.to_a, :lose)
-    #    if @monitor
-    #      @monitor.operation(:finish, @game.board.to_a, "winner is #{attacker.name}")
-    #    end
-
-    #  end
-
-    #else
-    #  attacker.operation(:finish, @game.board.to_a, :lose)
-    #  deffender.operation(:finish, @game.board.to_a, :win)
-    #  if @monitor
-    #    @monitor.operation(:finish, @game.board.to_a, "winner is #{deffender.name}")
-    #  end
-
-    #end
   end
 
   #
@@ -338,34 +328,48 @@ end
 # TimerClass
 # -------------------------------------------------
 class Timer
-  attr_accessor :thread
+  attr_accessor :thread, :should_fire
 
   #
   #
-  def start(target)
+  def initialize
+    @should_fire = true
+  end
+
+  #
+  #
+  def watch(target)
     if @thread
-      reset
+      kill
     end
 
     @thread = Thread.fork do
       sleep TIMEOUT
-      fire(target)
+      fire(target) if @should_fire
     end
   end
 
   #
   #
-  def reset
-    @thread.kill
-    while @thread.alive?; end
-    @thread = nil
+  def cancel
+    @should_fire = false
+  end
+
+  #
+  #
+  def kill
+    if @thread
+      @thread.kill
+      while @thread.alive?; end
+      @thread = nil
+    end
   end
 
   #
   #
   def fire(target)
-    $log.info("#{TIMEOUT}sec timeout: looser is #{target.name}")
-    Match.which(target).finish(target.other_plyr)
+    $log.info("#{TIMEOUT}sec timeout: loser is #{target.name}")
+    Match.which(target).finish(target)
   end
 
 end
