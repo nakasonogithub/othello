@@ -22,7 +22,7 @@ ws.on :message do |msg|
     msg = JSON.load(msg.data.to_s)
   rescue => e
     puts e.backtrace
-    exit
+    return
   end
   puts "action: #{msg['action']}"
   if msg['action']=='role'
