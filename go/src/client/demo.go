@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"regexp"
+	"time"
 	"strconv"
 	"strings"
 )
@@ -35,15 +35,15 @@ func index(w http.ResponseWriter, _ *http.Request) {
 
   function str2mark(s) {
     if(s == null) {
-      return "　";
+      return " ";
     }
     if(s == "w") {
-      return "○";
+      return "o";
     }
     if(s == "b") {
-      return "●";
+      return "x";
     }
-    return "？";
+    return "?";
   }
 
   function showBoard(data) {
@@ -152,6 +152,101 @@ func selftest(w http.ResponseWriter, _ *http.Request) {
 `)
 }
 
+type Stone int
+
+const (
+	UNKNOWN = iota
+	EMPTY
+	ENEMY
+	PLAYER
+	CANDIDATE
+)
+
+type Board struct {
+	cells [8][8]Stone
+}
+
+func letter2stone(s string) Stone {
+	switch s {
+	case "0":
+		return EMPTY
+	case "1":
+		return ENEMY
+	case "2":
+		return PLAYER
+	case "3":
+		return CANDIDATE
+	}
+	return UNKNOWN
+}
+
+func NewBoard(data string) *Board {
+	b := new(Board)
+	ary := strings.Split(data, "")
+	for y := 0; y < 8; y++ {
+		for x := 0; x < 8; x++ {
+			b.Set(x, y, letter2stone(ary[y*8+x]))
+		}
+	}
+	b.Update()
+	return b
+}
+
+func (self *Board) Set(x int, y int, s Stone) {
+	self.cells[y][x] = s
+}
+
+func (self *Board) Get(x int, y int) Stone {
+	return self.cells[y][x]
+}
+
+func (self *Board) Update() {
+	for y := 0; y < 8; y++ {
+		for x := 0; x < 8; x++ {
+			if self.IsCandidate(x, y) {
+				self.Set(x, y, CANDIDATE)
+			}
+		}
+	}
+}
+
+func (self *Board) IsCandidate(x int, y int) bool {
+	if self.Get(x, y) != EMPTY && self.Get(x, y) != CANDIDATE {
+		return false
+	}
+	type Dir struct {
+		y int
+		x int
+	}
+	steps := [8][8]int{{-1, -1}, {-1, 0}, {-1, 1},
+		{0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}}
+	for _, step := range steps {
+		found := false
+		px, py := x, y
+		for {
+			py += step[0]
+			px += step[1]
+			if px < 0 || 8 <= px || py < 0 || 8 <= py {
+				break
+			}
+			if found {
+				if self.Get(px, py) == PLAYER {
+					return true
+				} else if self.Get(px, py) != ENEMY {
+					break
+				}
+			} else {
+				if self.Get(px, py) == ENEMY {
+					found = true
+				} else {
+					break
+				}
+			}
+		}
+	}
+	return false
+}
+
 func othello(w http.ResponseWriter, r *http.Request) {
 	result := `{}`
 	defer func() {
@@ -161,56 +256,32 @@ func othello(w http.ResponseWriter, r *http.Request) {
 	}()
 	r.ParseForm()
 	callback := r.FormValue("callback")
-	pos := think(strings.Split(r.FormValue("data"), ""))
+	b := NewBoard(r.FormValue("data"))
+	x, y := think(b)
 	if callback != "" {
-		x := strconv.Itoa(pos % 8)
-		y := strconv.Itoa(pos / 8)
-		result = callback + "(\"{\\\"x\\\":" + x
-		result += ", \\\"y\\\":" + y + "}\");"
+		result = callback + "(\"{\\\"x\\\":" + strconv.Itoa(y)
+		result += ", \\\"y\\\":" + strconv.Itoa(x) + "}\");"
 	}
 }
 
-func think(board []string) int {
-	res := []int{}
-	for i := 0; i < 8*8; i++ {
-		if isCandidate(board, i) {
-			res = append(res, 3)
-		} else {
-			n, _ := strconv.Atoi(board[i])
-			res = append(res, n)
-		}
+func think(b *Board) (int, int) {
+	type Pos struct {
+		x int
+		y int
 	}
-	return select_cell(res)
-}
-
-func isCandidate(board []string, target int) bool {
-	if board[target] != "0" {
-		return false
-	}
-	step := []int{-9, -8, -7, -1, 1, 7, 8, 9}
-	r := regexp.MustCompile(`^1+2`)
-	for v := 0; v < len(step); v++ {
-		s := ""
-		p := target
-		for {
-			p += step[v]
-			if (0 > p) || (p > 63) {
-				// ボードからはみ出していたらおしまい
-				break
-			}
-			s += board[p]
-			// sが条件をみたすかチェック,満たすなら文字列"1"を返す
-			// 1=相手のコマが１つずつ続いたあとに
-			// 2=自分のコマがあれば、
-			// ここに自分のコマを置くと挟めることになる
-			if r.MatchString(s) {
-				return true
+	var cans []Pos
+	for y := 0; y < 8; y++ {
+		for x := 0; x < 8; x++ {
+			if b.Get(x,y) == CANDIDATE {
+				cans = append(cans, Pos{x,y})
 			}
 		}
 	}
-	return false
+	n := time.Now().UnixNano() % int64(len(cans))
+	return cans[n].x, cans[n].y
 }
 
+/*
 func select_cell(board []int) int {
 	//  重心を探して重心に一番近い置ける場所に置いているつもり
 	//  少なくとも序盤は真ん中近くに置いていった方が良い気がする
@@ -264,3 +335,4 @@ func select_cell(board []int) int {
 	}
 	return no
 }
+*/
