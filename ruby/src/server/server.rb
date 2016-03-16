@@ -228,7 +228,7 @@ class Match
   #     - 両者ともパスになる場合
   #     - 盤面が片方の色になる場合
   def finish(loser=nil)
-    $log.info("finish loser=#{loser.name}")
+    $log.info("finish loser=#{loser.name}") if loser
 
     @timer.cancel
     brd = @game.board.to_a
@@ -479,14 +479,16 @@ class Game
   #        - 盤面が片方の色になる場合
   def next_action(stone)
     if can_put? stone
-      :change
+      act = :change
     else
       if can_put? stone.other
-        :pass
+        act = :pass
       else
-        :finish
+        act = :finish
       end
     end
+    $log.debug("action: #{act}")
+    return act
   end
 
   #

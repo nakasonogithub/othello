@@ -10,8 +10,11 @@ import (
 )
 
 func main() {
+	port := 8080
 	http.HandleFunc("/", index)
 	http.HandleFunc("/think", othello)
+	http.HandleFunc("/selftest", selftest)
+	log.Printf("access http://0.0.0.0:%d/", port)
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
@@ -19,16 +22,16 @@ func main() {
 }
 
 func index(w http.ResponseWriter, _ *http.Request) {
-	fmt.Println("accessed /")
+	log.Printf("accessed /")
 	fmt.Fprint(w, `
 <!DOCTYPE html>
 <HTML>
 <META CHARSET="UTF-8">
 <SCRIPT>
-function showStatus(msg) {
+  function showStatus(msg) {
     var s = document.getElementById("status").innerHTML;
     document.getElementById("status").innerHTML = msg + "<br />" + s;
-}
+  }
 
   function str2mark(s) {
     if(s == null) {
@@ -89,7 +92,9 @@ function showStatus(msg) {
     sock.onopen = function(evt)  { showStatus("onopen"); }
     sock.onclose = function(evt) { showStatus("disconnected."); }
     sock.onmessage = function(evt) {
+      console.log(JSON.stringify(evt));
       var e = JSON.parse(evt.data);
+      console.log(JSON.stringify(e));
       console.log(e);
       if(e.action == "role") {
         var name = Math.random().toString(36).slice(-8);
@@ -129,6 +134,24 @@ function showStatus(msg) {
 `)
 }
 
+func selftest(w http.ResponseWriter, _ *http.Request) {
+	log.Printf("accessed /selftest")
+	fmt.Fprint(w, `
+<!DOCTYPE html>
+<HTML>
+  <SCRIPT>
+  window.onload = function() {
+  }
+  </SCRIPT>
+  <BODY>
+    <H2>selftest</H2>
+    <DIV ID="board"></DIV>
+    <DIV ID="apicall"></DIV>
+  </BODY>
+</HTML>
+`)
+}
+
 func othello(w http.ResponseWriter, r *http.Request) {
 	result := `{}`
 	defer func() {
@@ -152,10 +175,10 @@ func think(board []string) int {
 	for i := 0; i < 8*8; i++ {
 		if isCandidate(board, i) {
 			res = append(res, 3)
-                } else {
+		} else {
 			n, _ := strconv.Atoi(board[i])
 			res = append(res, n)
-                }
+		}
 	}
 	return select_cell(res)
 }
@@ -189,17 +212,55 @@ func isCandidate(board []string, target int) bool {
 }
 
 func select_cell(board []int) int {
-	for y := 0; y<8; y++ {
-        	buf:= ""
-		for x := 0; x<8; x++ {
-			buf += strconv.Itoa(board[y*8+x])
+	//  重心を探して重心に一番近い置ける場所に置いているつもり
+	//  少なくとも序盤は真ん中近くに置いていった方が良い気がする
+
+	// まずx方向とy方向それぞれについてコマがいくつあるかを数える
+	x_num := [8]int{0, 0, 0, 0, 0, 0, 0, 0}
+	y_num := [8]int{0, 0, 0, 0, 0, 0, 0, 0}
+	num := 0
+	for y := 0; y < 8; y++ {
+		for x := 0; x < 8; x++ {
+			if board[y*8+x] == 1 {
+				x_num[x] += 1
+				y_num[y] += 1
+				num += 1
+			}
 		}
-		fmt.Println(buf)
 	}
+
+	// 重心の場所を計算してみる
+	x_ave := 0
+	y_ave := 0
+	for y := 0; y < 8; y++ {
+		for x := 0; x < 8; x++ {
+			x_ave += x * x_num[x]
+			y_ave += y * x_num[y]
+		}
+	}
+	x_ave /= num
+	y_ave /= num
+
+	// 重心からの距離を計算する
+	dist := [8 * 8]int{}
+	for y := 0; y < 8; y++ {
+		for x := 0; x < 8; x++ {
+			dist[y*8+x] = (x-x_ave)*(x-x_ave) + (y-y_ave)*(y-y_ave)
+		}
+	}
+
+	// 一番重心に近い場所を探す
+	no := -1
 	for i := 0; i < len(board); i++ {
 		if board[i] == 3 {
-			return i
+			if no == -1 {
+				no = i
+			} else {
+				if dist[i] < dist[no] {
+					no = i
+				}
+			}
 		}
 	}
-	return -1
+	return no
 }
