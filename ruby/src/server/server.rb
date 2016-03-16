@@ -228,12 +228,12 @@ class Match
   #     - 両者ともパスになる場合
   #     - 盤面が片方の色になる場合
   def finish(loser=nil)
-    $log.info("finish loser=#{loser.name}") if loser
 
     @timer.cancel
     brd = @game.board.to_a
 
     if loser
+      $log.info("finish winer=#{other_plyr(loser).name}, loser=#{loser.name}")
       # 反則終了
       loser.operation(:finish, brd, :lose)
       other_plyr(loser).operation(:finish, brd, :win)
@@ -242,6 +242,7 @@ class Match
       # 配置可能場所枯渇
       attacker_count = @game.board.count(attacker.clr)
       deffender_count = @game.board.count(deffender.clr)
+      $log.info("#{attacker.name} has #{attacker_count}, #{deffender.name} has #{deffender_count}")
       if attacker_count > deffender_count
         attacker.operation(:finish, brd, :win)
         deffender.operation(:finish, brd, :lose)
@@ -258,6 +259,7 @@ class Match
         @monitor.operation(:finish, brd, :draw) if @monitor
 
       end
+      $log.info("finish loser=#{loser.name}")
     end
 
     # TODO: Match.@@listから削除: oncloseからも呼べるようなめそっどにする
