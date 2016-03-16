@@ -212,6 +212,7 @@ func (self *Board) Update() {
 
 func (self *Board) IsCandidate(x int, y int) bool {
 	if self.Get(x, y) != EMPTY && self.Get(x, y) != CANDIDATE {
+	//	self.Set(x, y, EMPTY)
 		return false
 	}
 	type Dir struct {
@@ -276,6 +277,9 @@ func think(b *Board) (int, int) {
 				cans = append(cans, Pos{x,y})
 			}
 		}
+	}
+	if int(len(cans)) == 0 {
+		return -1, -1
 	}
 	n := time.Now().UnixNano() % int64(len(cans))
 	return cans[n].x, cans[n].y
