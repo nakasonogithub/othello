@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"time"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func main() {
 	port := 8080
-	http.HandleFunc("/", index)
-	http.HandleFunc("/think", othello)
+	http.HandleFunc("/", Index)
+	http.HandleFunc("/think", Othello)
 	http.HandleFunc("/selftest", selftest)
 	log.Printf("access http://0.0.0.0:%d/", port)
 	err := http.ListenAndServe(":8080", nil)
@@ -21,7 +21,7 @@ func main() {
 	}
 }
 
-func index(w http.ResponseWriter, _ *http.Request) {
+func Index(w http.ResponseWriter, _ *http.Request) {
 	log.Printf("accessed /")
 	fmt.Fprint(w, `
 <!DOCTYPE html>
@@ -34,15 +34,9 @@ func index(w http.ResponseWriter, _ *http.Request) {
   }
 
   function str2mark(s) {
-    if(s == null) {
-      return " ";
-    }
-    if(s == "w") {
-      return "o";
-    }
-    if(s == "b") {
-      return "x";
-    }
+    if(s == null) { return " "; }
+    if(s == "w") { return "o"; }
+    if(s == "b") { return "x"; }
     return "?";
   }
 
@@ -66,12 +60,8 @@ func index(w http.ResponseWriter, _ *http.Request) {
   }
 
   function c2n(me, c){
-    if(c == null) {
-      return 0;
-    }
-    if(me == c) {
-      return 2;
-    }
+    if(c == null) { return 0; }
+    if(me == c) { return 2; }
     return 1;
   }
 
@@ -86,7 +76,7 @@ func index(w http.ResponseWriter, _ *http.Request) {
   }
 
   window.onload = function() {
-    var uri = "ws://localhost:8088"
+    var uri = "ws://localhost:8088";
     sock = new WebSocket(uri);
     sock.onerror = function(evt) { showStatus("error"); }
     sock.onopen = function(evt)  { showStatus("onopen"); }
@@ -103,7 +93,7 @@ func index(w http.ResponseWriter, _ *http.Request) {
       } else if(e.action == "wait") {
         showStatus("waiting for another player...");
       } else if(e.action == "deffence") {
-        showStatus("waiting..");
+        showStatus("deffence, waiting for attack...  my color is " + e.color);
         showBoard(e.board);
       } else if(e.action == "attack") {
         console.log("ok attack");
@@ -152,103 +142,7 @@ func selftest(w http.ResponseWriter, _ *http.Request) {
 `)
 }
 
-type Stone int
-
-const (
-	UNKNOWN = iota
-	EMPTY
-	ENEMY
-	PLAYER
-	CANDIDATE
-)
-
-type Board struct {
-	cells [8][8]Stone
-}
-
-func letter2stone(s string) Stone {
-	switch s {
-	case "0":
-		return EMPTY
-	case "1":
-		return ENEMY
-	case "2":
-		return PLAYER
-	case "3":
-		return CANDIDATE
-	}
-	return UNKNOWN
-}
-
-func NewBoard(data string) *Board {
-	b := new(Board)
-	ary := strings.Split(data, "")
-	for y := 0; y < 8; y++ {
-		for x := 0; x < 8; x++ {
-			b.Set(x, y, letter2stone(ary[y*8+x]))
-		}
-	}
-	b.Update()
-	return b
-}
-
-func (self *Board) Set(x int, y int, s Stone) {
-	self.cells[y][x] = s
-}
-
-func (self *Board) Get(x int, y int) Stone {
-	return self.cells[y][x]
-}
-
-func (self *Board) Update() {
-	for y := 0; y < 8; y++ {
-		for x := 0; x < 8; x++ {
-			if self.IsCandidate(x, y) {
-				self.Set(x, y, CANDIDATE)
-			}
-		}
-	}
-}
-
-func (self *Board) IsCandidate(x int, y int) bool {
-	if self.Get(x, y) != EMPTY && self.Get(x, y) != CANDIDATE {
-	//	self.Set(x, y, EMPTY)
-		return false
-	}
-	type Dir struct {
-		y int
-		x int
-	}
-	steps := [8][8]int{{-1, -1}, {-1, 0}, {-1, 1},
-		{0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}}
-	for _, step := range steps {
-		found := false
-		px, py := x, y
-		for {
-			py += step[0]
-			px += step[1]
-			if px < 0 || 8 <= px || py < 0 || 8 <= py {
-				break
-			}
-			if found {
-				if self.Get(px, py) == PLAYER {
-					return true
-				} else if self.Get(px, py) != ENEMY {
-					break
-				}
-			} else {
-				if self.Get(px, py) == ENEMY {
-					found = true
-				} else {
-					break
-				}
-			}
-		}
-	}
-	return false
-}
-
-func othello(w http.ResponseWriter, r *http.Request) {
+func Othello(w http.ResponseWriter, r *http.Request) {
 	result := `{}`
 	defer func() {
 		w.Header().Set("Content-Type", "application/json")
@@ -257,32 +151,57 @@ func othello(w http.ResponseWriter, r *http.Request) {
 	}()
 	r.ParseForm()
 	callback := r.FormValue("callback")
-	b := NewBoard(r.FormValue("data"))
-	x, y := think(b)
+	x, y := Think(strings.Split(r.FormValue("data"), ""))
 	if callback != "" {
 		result = callback + "(\"{\\\"x\\\":" + strconv.Itoa(y)
 		result += ", \\\"y\\\":" + strconv.Itoa(x) + "}\");"
 	}
 }
 
-func think(b *Board) (int, int) {
-	type Pos struct {
-		x int
-		y int
-	}
-	var cans []Pos
-	for y := 0; y < 8; y++ {
-		for x := 0; x < 8; x++ {
-			if b.Get(x,y) == CANDIDATE {
-				cans = append(cans, Pos{x,y})
-			}
+func Think(board []string) (int, int) {
+	var cans []int
+	for i := 0; i < 8*8; i++ {
+		if IsCandidate(board, i) {
+			cans = append(cans, i)
 		}
 	}
 	if int(len(cans)) == 0 {
 		return -1, -1
 	}
 	n := time.Now().UnixNano() % int64(len(cans))
-	return cans[n].x, cans[n].y
+	return cans[n] % 8, cans[n] / 8
+}
+
+func IsCandidate(board []string, pos int) bool {
+	if board[pos] != "0" {
+		return false
+	}
+	for _, step := range []int{-9, -8, -7, -1, 1, 7, 8, 9} {
+		found := false
+		p := pos
+		for {
+			p += step
+			x, y := p%8, p/8
+			if x < 0 || 8 <= x || y < 0 || 8 <= y {
+				break
+			}
+			if found {
+				if board[p] == "2" {
+					return true
+				}
+				if board[p] != "1" {
+					break
+				}
+			} else {
+				if board[p] == "1" {
+					found = true
+				} else {
+					break
+				}
+			}
+		}
+	}
+	return false
 }
 
 /*
