@@ -118,8 +118,8 @@ Client<=>Server間はWebSocketで通信を行います。メッセージ形式�
     "board": [
         [null,null,null,null,null,null,null,null],
         [null,null,null,null,null,null,null,null],
-        [null,null,null,null,null,null,null,null],
-        [null,null,"b","b","b",null,null,null],
+        [null,null,null,"b",null,null,null,null],
+        [null,null,null,"b","b",null,null,null],
         [null,null,null,"b","w",null,null,null],
         [null,null,null,null,null,null,null,null],
         [null,null,null,null,null,null,null,null],
@@ -132,12 +132,5 @@ Client<=>Server間はWebSocketで通信を行います。メッセージ形式�
 
 
 ## AI作り方の参考に
-* client/ruby/sample.rb
-* python, goあたりでもsample作ってみるつもりです。
-* client/gui/client.htmlをローカルで開くとGUIでオセロができます。一人オセロやAIの動作確認に。
-
-
-## その他
-* goに移植したい
-* サーバの動作がクソ遅い
-
+* 各言語のsample.xxを見るとなんとなく
+* gui/client/client.htmlをローカルで開くとGUIでオセロができます。一人オセロやAIの動作確認に。
