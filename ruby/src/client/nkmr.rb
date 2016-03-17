@@ -5,6 +5,7 @@
 # -------------------------------------------------
 require 'websocket-client-simple'
 require 'json'
+require '../../lib/othello_lib.rb'
 
 
 # -------------------------------------------------
@@ -25,7 +26,10 @@ ROLE = "player"
 # logic
 # -------------------------------------------------
 def where_should_i_place(brd, clr)
-  places = where_puttable(brd, clr)
+  g = Game.new(brd)
+  p 111
+  places = g.where_puttable(clr)
+  p 222
   best = nil
   places.each do | place |
     best = place unless best
@@ -49,68 +53,7 @@ RATE = [
   [-12,-15, -3, -3, -3, -3,-15,-12],
   [ 30,-12,  0, -1, -1,  0,-12, 30]
 ]
-#RATE = [
-#  [120,-20, 20,  5,  5, 20,-20,120],
-#  [-20,-40, -5, -5, -5, -5,-40,-20],
-#  [ 20, -5, 15,  3,  3, 15, -5, 20],
-#  [  5, -5,  3,  3,  3,  3, -5,  5],
-#  [  5, -5,  3,  3,  3,  3, -5,  5],
-#  [ 20, -5, 15,  3,  3, 15, -5, 20],
-#  [-20,-40, -5, -5, -5, -5,-40,-20],
-#  [120,-20, 20,  5,  5, 20,-20,120]
-#]
 
-
-#
-def where_puttable(brd, clr)
-  places = []
-  0.upto 7 do |x|
-    0.upto 7 do |y|
-      if where_reversible(brd,x,y,clr).size > 0
-        places << {x: x, y: y}
-      end
-    end
-  end
-  return places
-end
-
-#
-def where_reversible(brd,x,y,clr)
-  #
-  return [] if brd[y][x]
-  #
-  where = []
-  where << {x: -1, y:  1} if reversible?(brd,x,y,clr,-1, 1)
-  where << {x: -1, y:  0} if reversible?(brd,x,y,clr,-1, 0)
-  where << {x: -1, y: -1} if reversible?(brd,x,y,clr,-1,-1)
-  where << {x:  0, y:  1} if reversible?(brd,x,y,clr, 0, 1)
-  where << {x:  0, y: -1} if reversible?(brd,x,y,clr, 0,-1)
-  where << {x:  1, y:  1} if reversible?(brd,x,y,clr, 1, 1)
-  where << {x:  1, y:  0} if reversible?(brd,x,y,clr, 1, 0)
-  where << {x:  1, y: -1} if reversible?(brd,x,y,clr, 1,-1)
-  where
-end
-
-#
-def reversible?(brd, x, y, clr, h, v)
-  target = []
-  x+=h; y+=v
-  until x<0 or x>7 or y<0 or y>7 # 盤外に出たら終了
-    break unless brd[y][x]
-    if target.uniq.size <= 2 # 近い2色分押さえとけばOK
-      target << brd[y][x]
-    else
-      break
-    end
-    x+=h; y+=v # 対象の移動
-  end
-  if clr=='w'
-    other = 'b'
-  else
-    other = 'w'
-  end
-  return target.uniq == [other, clr]
-end
 
 # -------------------------------------------------
 # main
