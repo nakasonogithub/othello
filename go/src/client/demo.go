@@ -35,8 +35,8 @@ func Index(w http.ResponseWriter, _ *http.Request) {
 
   function str2mark(s) {
     if(s == null) { return " "; }
-    if(s == "w") { return "o"; }
-    if(s == "b") { return "x"; }
+    if(s == "w") { return "○"; }
+    if(s == "b") { return "●"; }
     return "?";
   }
 
@@ -159,16 +159,38 @@ func Othello(w http.ResponseWriter, r *http.Request) {
 }
 
 func Think(board []string) (int, int) {
-	var cans []int
-	for i := 0; i < 8*8; i++ {
-		if IsCandidate(board, i) {
-			cans = append(cans, i)
+	var tmp []int
+        var turn_no int
+	for i := 0; i<8*8; i++ {
+		if board[i] != "0" {
+			turn_no++
 		}
 	}
-	if int(len(cans)) == 0 {
+	for i := 0; i < 8*8; i++ {
+		if IsCandidate(board, i) {
+			tmp = append(tmp, i)
+		}
+	}
+	if int(len(tmp)) == 0 {
 		return -1, -1
 	}
-	n := time.Now().UnixNano() % int64(len(cans))
+	w := []int{100,  2, 30,  5,  5, 30,  5, 100,
+                     2,  2,  5,  3,  3,  5,  2,   2,
+                    30,  2, 30, 10, 10, 30,  2,  30,
+                     5,  2, 10,  0,  0, 10,  2,   5,
+                     5,  2, 10,  0,  0, 10,  2,   5,
+                    30,  2, 30, 10, 10, 30,  2,  30,
+                     2,  2,  5,  3,  3,  5,  2,   2,
+	           100,  2, 30, 10, 10, 30,  5, 100}
+        var cans []int
+        for _, can := range tmp {
+		for i :=0; i<w[can]; i++ {
+			cans = append(cans, can)
+		}
+	}
+	fmt.Println(cans)
+	var n int
+	n = int(time.Now().UnixNano() % int64(len(cans)))
 	return cans[n] % 8, cans[n] / 8
 }
 
@@ -204,58 +226,3 @@ func IsCandidate(board []string, pos int) bool {
 	return false
 }
 
-/*
-func select_cell(board []int) int {
-	//  重心を探して重心に一番近い置ける場所に置いているつもり
-	//  少なくとも序盤は真ん中近くに置いていった方が良い気がする
-
-	// まずx方向とy方向それぞれについてコマがいくつあるかを数える
-	x_num := [8]int{0, 0, 0, 0, 0, 0, 0, 0}
-	y_num := [8]int{0, 0, 0, 0, 0, 0, 0, 0}
-	num := 0
-	for y := 0; y < 8; y++ {
-		for x := 0; x < 8; x++ {
-			if board[y*8+x] == 1 {
-				x_num[x] += 1
-				y_num[y] += 1
-				num += 1
-			}
-		}
-	}
-
-	// 重心の場所を計算してみる
-	x_ave := 0
-	y_ave := 0
-	for y := 0; y < 8; y++ {
-		for x := 0; x < 8; x++ {
-			x_ave += x * x_num[x]
-			y_ave += y * x_num[y]
-		}
-	}
-	x_ave /= num
-	y_ave /= num
-
-	// 重心からの距離を計算する
-	dist := [8 * 8]int{}
-	for y := 0; y < 8; y++ {
-		for x := 0; x < 8; x++ {
-			dist[y*8+x] = (x-x_ave)*(x-x_ave) + (y-y_ave)*(y-y_ave)
-		}
-	}
-
-	// 一番重心に近い場所を探す
-	no := -1
-	for i := 0; i < len(board); i++ {
-		if board[i] == 3 {
-			if no == -1 {
-				no = i
-			} else {
-				if dist[i] < dist[no] {
-					no = i
-				}
-			}
-		}
-	}
-	return no
-}
-*/
