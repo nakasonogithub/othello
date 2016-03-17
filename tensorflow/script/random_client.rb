@@ -1,6 +1,13 @@
 #!/Users/nakaso/.rbenv/shims/ruby
 
 # -------------------------------------------------
+# What's this
+# -------------------------------------------------
+# 配置可能な場所からRandomに打ち手を決めるオセロクライアント
+# コマンドライン引数を渡された場合、その引数に対して
+# 棋譜のファイル出力を行なう
+
+# -------------------------------------------------
 # library/module
 # -------------------------------------------------
 require 'websocket-client-simple'
@@ -19,7 +26,6 @@ require 'json'
 SERV = 'ws://0.0.0.0:8088'
 NAME = "nkmr"
 ROLE = "player"
-FILE = "./training/training.log"
 
 # -------------------------------------------------
 # logic
@@ -131,14 +137,15 @@ ws.on :message do |msg|
     ws.send({x: x, y: y}.to_json)
 
   when 'finish'
-    p 0
-    if msg['result'] == 'win'
-      $rec[:winner] = msg['color']
-      json = JSON.load open(FILE)
-      json['data'] << $rec.to_json
-      #p json
-      open(FILE, 'w') do |file|
-        JSON.dump(json, file)
+    if ARGV[0]
+      if msg['result'] == 'win'
+        $rec[:winner] = msg['color']
+        json = JSON.load open(ARGV[0])
+        json['data'] << $rec.to_json
+        #p json
+        open(ARGV[0], 'w') do |file|
+          JSON.dump(json, file)
+        end
       end
     end
     exit
