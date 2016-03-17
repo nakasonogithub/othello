@@ -69,7 +69,7 @@ func Index(w http.ResponseWriter, _ *http.Request) {
     var s = "";
     for(var y=0; y<8; y++) {
       for(var x=0; x<8; x++) {
-        s += c2n(e.color, e.board[x][y]) + "";
+        s += c2n(e.color, e.board[y][x]) + "";
       }
     }
     return s;
@@ -153,8 +153,8 @@ func Othello(w http.ResponseWriter, r *http.Request) {
 	callback := r.FormValue("callback")
 	x, y := Think(strings.Split(r.FormValue("data"), ""))
 	if callback != "" {
-		result = callback + "(\"{\\\"x\\\":" + strconv.Itoa(y)
-		result += ", \\\"y\\\":" + strconv.Itoa(x) + "}\");"
+		result = callback + "(\"{\\\"x\\\":" + strconv.Itoa(x)
+		result += ", \\\"y\\\":" + strconv.Itoa(y) + "}\");"
 	}
 }
 
