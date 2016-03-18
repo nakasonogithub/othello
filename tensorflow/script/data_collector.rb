@@ -40,9 +40,11 @@ end
 
 #
 # Dataファイル出力先Dirが存在しない場合, 作成する
-def create_file
-  open(DATA_FILE, 'w') do |file|
-    JSON.dump({data: []}, file)
+def may_create_file
+  unless File.exist? DATA_FILE
+    open(DATA_FILE, 'w') do |file|
+      JSON.dump({data: []}, file)
+    end
   end
 end
 
@@ -52,7 +54,6 @@ def may_mkdir
   unless Dir.exist? DATA_DIR
     puts "mkdir #{DATA_DIR}"
     Dir.mkdir DATA_DIR
-    create_file
   end
 end
 
@@ -91,5 +92,6 @@ end
 # ----------------------------------
 # main
 # ----------------------------------
-may_mkdir()
-collect_data()
+may_mkdir
+may_create_file
+collect_data

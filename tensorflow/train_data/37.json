@@ -1,0 +1,1 @@
+{"records":[{"result":false,"board":[["b","b","b",null,"b",null,"w",null],["w","w","b","b","b","w",null,null],[null,"w","b","w","b",null,null,null],[null,"b","w","w","b",null,null,null],["b",null,"w","w","b",null,null,null],[null,"w","w","w","w","w","w",null],["w","w","w","w","b","b","w","w"],[null,null,null,"b","b","b","b",null]],"move":{"c":"w","x":1,"y":4}}]}

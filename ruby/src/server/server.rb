@@ -1,12 +1,10 @@
-#!/Users/nakaso/.rbenv/shims/ruby
-
 # -------------------------------------------------
 # library/module
 # -------------------------------------------------
 require 'em-websocket'
 require 'optparse'
 require 'json'
-require '../../lib/othello_lib.rb'
+require_relative '../../lib/othello_lib.rb'
 
 # -------------------------------------------------
 # How to Use

@@ -1,5 +1,3 @@
-#!/Users/nakaso/.rbenv/shims/ruby
-
 # -------------------------------------------------
 # What's this
 # -------------------------------------------------
@@ -130,7 +128,7 @@ ws.on :message do |msg|
     color = msg['color']
     x, y = where_should_i_place(board, color)
     $rec[:record] << {
-      no: $rec.size+1,
+      no: board.flatten.join('').count('w') + board.flatten.join('').count('b')-4,
       board: board,
       move: {c: color, x: x, y: y}
     }
@@ -140,12 +138,19 @@ ws.on :message do |msg|
     if ARGV[0]
       if msg['result'] == 'win'
         $rec[:winner] = msg['color']
-        json = JSON.load open(ARGV[0])
-        json['data'] << $rec.to_json
-        #p json
-        open(ARGV[0], 'w') do |file|
-          JSON.dump(json, file)
+      else
+        if msg['color'] == 'w'
+          $rec[:winner] = 'b'
+        else
+          $rec[:winner] = 'w'
         end
+        # HACK: ファイルの書き込み時に競合が起きないようにsleep. いけてない 
+        sleep 3
+      end
+      json = JSON.load open(ARGV[0])
+      json['data'] << $rec
+      open(ARGV[0], 'w') do |file|
+        JSON.dump(json, file)
       end
     end
     exit
