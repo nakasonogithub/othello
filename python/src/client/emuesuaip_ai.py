@@ -33,21 +33,28 @@ class Candidate:
 	def get_strength(self):
 		print "つよさを調べる"
 		show(self.board)
+		strength = 0
 		mycolor = self.mycolor
 		enemycolor = swap(mycolor)
+		sakiyomi_list = [self.board]
+		sakiyomi_pos = 0
 		if self.step > 0:
 			self.step -= 1
-			ary = list(self.board)
-			for i in range(H * W):
-				buf = proc(ary, i, mycolor, enemycolor, True)
-				if buf != None:
-					print p2s(i) + "に置いたら以下のようになりますよ"
-					show(buf)
-					
+			print "先読みリストを取り出す"
+			working_list = sakiyomi_list[:]
+			sakiyomi_list = []
+			for working in working_list:
+				print "check " + working + " working_list_len=" + str(len(working_list))
+				for i in range(H * W):
+					buf = proc(list(working), i, mycolor, enemycolor, True)
+					if buf != None:
+						sakiyomi_list.append(buf)
+						print "先読みリストの要素数は" + str(len(sakiyomi_list)) + "になった"
+						if mycolor == self.mycolor:
+							strength += 1
 			enemycolor = mycolor
 			mycolor = swap(mycolor)
-			
-		return 0
+		return strength
 
 # ----------------------------------------------------------------------
 def init_board():
@@ -139,7 +146,7 @@ def show(b):
 
 # ------------------------------------------------------------------------
 def select(board, mycolor):
-	step = 3
+	step = 5
 	print "次の候補リストを取得"
 	cans = []
 	enemycolor = swap(mycolor)
@@ -161,6 +168,8 @@ def select(board, mycolor):
 	for t in tmp:
 		if t["strength"] > strength:
 			pos = t["pos"]
+			strength = t["strength"]
+	print "一番つよいのは" + p2s(pos) + "の" + str(strength) + " だと思う"
 	return pos
 
 # ------------------------------------------------------------------------
@@ -189,18 +198,13 @@ class Client(ws4py.client.threadedclient.WebSocketClient):
 			self.send(json.dumps({'x': pos%W, 'y': pos/W}))
 		elif action == 'finish':
 			print msg['result']
+			if msg['result'] == "lose":
+				print "ちぇっ"
 			self.close
 			sys.exit()
 
 # ------------------------------------------------------------------------
 if __name__ == '__main__':
-	#mycolor = "b"
-	#board = init_board()
-	#show(board)
- 	# websocketで得られたものを使うように修正する予定
-	#pos = select(board, mycolor)
-	#print "次の一手はx=" + str(pos%W) + " y=" + str(pos/H) + "だ！"
-
 	ws = Client('ws://127.0.0.1:8088/', protocols=['http-only', 'chat'])
 	ws.connect()
 	ws.run_forever()
