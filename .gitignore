@@ -7,3 +7,4 @@ pip-delete-this-directory.txt
 *.o
 *.a
 *.so
+*.swp
