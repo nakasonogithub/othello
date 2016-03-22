@@ -38,18 +38,15 @@ class Candidate:
 		enemycolor = swap(mycolor)
 		sakiyomi_list = [self.board]
 		sakiyomi_pos = 0
-		if self.step > 0:
+		while self.step > 0:
 			self.step -= 1
-			print "先読みリストを取り出す"
 			working_list = sakiyomi_list[:]
 			sakiyomi_list = []
 			for working in working_list:
-				print "check " + working + " working_list_len=" + str(len(working_list))
 				for i in range(H * W):
 					buf = proc(list(working), i, mycolor, enemycolor, True)
 					if buf != None:
 						sakiyomi_list.append(buf)
-						print "先読みリストの要素数は" + str(len(sakiyomi_list)) + "になった"
 						if mycolor == self.mycolor:
 							strength += 1
 			enemycolor = mycolor
@@ -146,7 +143,8 @@ def show(b):
 
 # ------------------------------------------------------------------------
 def select(board, mycolor):
-	step = 5
+	show(board)
+	step = 2 * 2
 	print "次の候補リストを取得"
 	cans = []
 	enemycolor = swap(mycolor)
