@@ -147,9 +147,15 @@ class Match
   # 対戦開始
   def start
     $log.info "GameMatching: #{@p1.id} vs #{@p2.id}"
-    # 先行をRandomで決定
-    pre = [*1..2].sample
-    post = pre == 1 ? 2 : 1
+    if $option[:seq]
+      # 先行を先に接続した人に決定
+      pre = 1
+      post = 2
+    else
+      # 先行をRandomで決定
+      pre = [*1..2].sample
+      post = pre == 1 ? 2 : 1
+    end
     # Gameの生成, 関連付け
     @game = Game.new
     # Player情報の更新
@@ -385,6 +391,7 @@ OptionParser.new do |opt|
   opt.on('--host=[VALUE]', "[str] host name (default: #{DEFAULT_HOST})"){|v| $option[:host] = v}
   opt.on('--port=[VALUE]', "[int] port number (default: #{DEFAULT_PORT})"){|v| $option[:port] = v}
   opt.on('--debug',        '[ - ] logging debug log'){|v| $option[:debug] = v}
+  opt.on('--seq',          '[ - ] order by connected'){|v| $option[:seq] = v}
   opt.parse!(ARGV)
 end
 
