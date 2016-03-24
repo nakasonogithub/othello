@@ -3,7 +3,7 @@
 # -------------------------------------------------
 require 'websocket-client-simple'
 require 'json'
-require '../../lib/othello_lib.rb'
+require '../../lib/shirokuro_lib.rb'
 
 
 # -------------------------------------------------

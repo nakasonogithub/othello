@@ -4,13 +4,13 @@
 require 'em-websocket'
 require 'optparse'
 require 'json'
-require_relative '../../lib/othello_lib.rb'
+require_relative '../../lib/shirokuro_lib.rb'
 
 # -------------------------------------------------
 # How to Use
 # -------------------------------------------------
 # execute:
-#   ruby othello_serv.rb
+#   ruby server.rb
 #
 # require:
 #   gem install em-websocket
