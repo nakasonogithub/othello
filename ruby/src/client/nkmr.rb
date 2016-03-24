@@ -24,19 +24,23 @@ ROLE = "player"
 # logic
 # -------------------------------------------------
 def where_should_i_place(brd, clr)
+  # 配置可能場所を取得
   g = Game.new(brd)
-  p 111
   places = g.where_puttable(clr)
-  p 222
-  best = nil
+  # 各マスの評価値を見て、一番点数の高いところを配列で取得
+  candicate = []
   places.each do | place |
-    best = place unless best
-    if RATE[best[:y]][best[:x]] < RATE[place[:y]][place[:x]]
-      best = place
+    candicate <<  place if candicate.empty?
+    if RATE[candicate[0][:y]][candicate[0][:x]] < RATE[place[:y]][place[:x]]
+      candicate.clear
+      candicate << place
+    elsif RATE[candicate[0][:y]][candicate[0][:x]] == RATE[place[:y]][place[:x]]
+      candicate << place
     end
   end
-  p "best=#{best}"
-  return best[:x], best[:y]
+  # 配列の中からランダムに一箇所を取得し、返却
+  c = candicate.sample
+  return c[:x], c[:y]
 end
 
 # 評価
@@ -76,7 +80,7 @@ end
 
 # エラー発生時
 ws.on :error do |e|
-  puts "on_error"
+  puts "on_error #{e.backtrace}"
   exit
 end
 
