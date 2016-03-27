@@ -1,18 +1,33 @@
 package main
 
 import (
-  "net/http"
-  "golang.org/x/net/websocket"
+	"fmt"
+	"golang.org/x/net/websocket"
+	"log"
+	"net/http"
 )
 
-func main() {
-  http.Handle("/", websocket.Handler(ShirokuroHandler))
-  err := http.ListenAndServe(":8088", nil)
-  if err != nil {
-    panic("ListenAndServe: " + err.Error())
-  }
+type OthelloRequest struct {
+	action string        `json:"action"`
+	board  []interface{} `json:"board"`
+	color  string        `json:"color"`
+	result string        `json:"result"`
 }
 
-func ShirokuroHandler(ws *websocket.Conn) {
-    io.Copy(ws, ws)
+func main() {
+	port := 8088
+	http.Handle("/", websocket.Handler(func(ws *websocket.Conn) {
+		log.Printf("new websocket: %v", ws)
+		websocket.Message.Send(
+			ws, `{"action":"role", "board":[], "color":null, "result":null}`)
+		var req OthelloRequest
+		for {
+			websocket.JSON.Receive(ws, &req)
+		}
+	}))
+	log.Printf("websocket server start (port=%d)", port)
+	err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
+	if err != nil {
+		panic(err)
+	}
 }
