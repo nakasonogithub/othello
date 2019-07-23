@@ -134,3 +134,4 @@ Client<=>Server間はWebSocketで通信を行います。メッセージ形式�
 ## AI作り方の参考に
 * 各言語のsample.xxを見るとなんとなく
 * gui/client/client.htmlをローカルで開くとGUIでオセロができます。一人オセロやAIの動作確認に。
+* tesw
